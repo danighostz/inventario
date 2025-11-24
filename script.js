@@ -14,15 +14,13 @@ function initializeAuthPage() {
     // Configurar tabs
     const tabBtns = document.querySelectorAll('.tab-btn');
     const authForms = document.querySelectorAll('.auth-form');
-    
     tabBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             const tab = this.getAttribute('data-tab');
-            
             // Actualizar tabs activos
             tabBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            
+
             // Mostrar formulario correspondiente
             authForms.forEach(form => {
                 form.classList.remove('active');
