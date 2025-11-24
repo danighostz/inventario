@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario Pro - Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="hoja.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="dashboard">
@@ -100,54 +100,53 @@
                 <h2><i class="fas fa-boxes"></i> Gestión de Inventario</h2>
             </div>
 
-            <!-- Formulario para agregar productos -->
-            <div class="dashboard-section">
-                <h3>Agregar Nuevo Producto</h3>
-                <form id="productForm" class="form-grid">
-                    <div class="form-group">
-                        <label for="nombre">Nombre del Producto *</label>
-                        <input type="text" id="nombre" name="nombre" required>
+            <!-- Formulario para agregar productos - CLASES SIMPLIFICADAS -->
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #2b2d42; margin-bottom: 20px;">Agregar Nuevo Producto</h3>
+                <form id="productForm">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Nombre del Producto *</label>
+                            <input type="text" id="nombre" name="nombre" required style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Categoría *</label>
+                            <input type="text" id="categoria" name="categoria" required style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Precio *</label>
+                            <input type="number" id="precio" name="precio" step="0.01" min="0" required style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Cantidad *</label>
+                            <input type="number" id="cantidad" name="cantidad" min="0" required style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Proveedor</label>
+                            <input type="text" id="proveedor" name="proveedor" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px;">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Descripción</label>
+                            <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción opcional del producto..." style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; resize: vertical;"></textarea>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="categoria">Categoría *</label>
-                        <input type="text" id="categoria" name="categoria" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="precio">Precio *</label>
-                        <input type="number" id="precio" name="precio" step="0.01" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="cantidad">Cantidad *</label>
-                        <input type="number" id="cantidad" name="cantidad" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="proveedor">Proveedor</label>
-                        <input type="text" id="proveedor" name="proveedor">
-                    </div>
-                    <div class="form-group">
-                        <label for="descripcion">Descripción</label>
-                        <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción opcional del producto..."></textarea>
-                    </div>
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-plus"></i>
-                            Agregar Producto
-                        </button>
-                    </div>
+                    <button type="submit" style="width: 100%; padding: 15px; background: #4361ee; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                        <i class="fas fa-plus"></i> Agregar Producto
+                    </button>
                 </form>
             </div>
 
             <!-- Lista de productos -->
-            <div class="dashboard-section">
-                <div class="section-header">
-                    <h3>Inventario Actual</h3>
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="searchInput" placeholder="Buscar productos...">
+            <div style="background: white; padding: 20px; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="color: #2b2d42;">Inventario Actual</h3>
+                    <div style="position: relative; min-width: 300px;">
+                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar productos..." style="width: 100%; padding: 10px 10px 10px 35px; border: 2px solid #e9ecef; border-radius: 6px;">
                     </div>
                 </div>
                 
-                <div id="inventoryTable" class="table-container">
+                <div id="inventoryTable">
                     <!-- La tabla se llenará dinámicamente -->
                 </div>
             </div>
