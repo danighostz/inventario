@@ -1,4 +1,4 @@
-// script.js - Sistema de Inventario con Autenticación
+// script.js - Sistema de Inventario con Autenticación - CORREGIDO
 
 document.addEventListener('DOMContentLoaded', function() {
     // Verificar en qué página estamos
@@ -167,9 +167,13 @@ function initializeDashboard() {
         addProduct();
     });
 
-    // Configurar búsqueda
+    // Configurar búsqueda CON DEBOUNCE
+    let searchTimeout;
     document.getElementById('searchInput').addEventListener('input', function() {
-        filterInventory(this.value);
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            filterInventory(this.value);
+        }, 300);
     });
 
     // Configurar logout
@@ -199,6 +203,11 @@ function setupNavigation() {
                     section.style.display = 'block';
                 }
             });
+
+            // Si vamos a inventario, recargar datos
+            if (target === 'inventory') {
+                loadInventory();
+            }
         });
     });
 }
@@ -230,6 +239,7 @@ function updateDashboardStats(stats) {
 // ===== GESTIÓN DE INVENTARIO =====
 async function loadInventory() {
     try {
+        console.log('🔄 Cargando inventario...');
         const response = await fetch('/api/products', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -238,10 +248,14 @@ async function loadInventory() {
         
         if (response.ok) {
             const products = await response.json();
+            console.log('✅ Productos cargados:', products);
             displayInventory(products);
+        } else {
+            console.error('❌ Error en la respuesta:', response.status);
         }
     } catch (error) {
-        console.error('Error cargando inventario:', error);
+        console.error('❌ Error cargando inventario:', error);
+        showNotification('Error al cargar el inventario', 'error');
     }
 }
 
@@ -280,28 +294,32 @@ function displayInventory(products) {
         const totalValue = (product.precio * product.cantidad).toFixed(2);
         
         tableHTML += `
-            <tr class="slide-in">
+            <tr class="product-row" 
+                data-name="${product.nombre.toLowerCase()}"
+                data-category="${product.categoria.toLowerCase()}"
+                data-supplier="${(product.proveedor || '').toLowerCase()}"
+                data-description="${(product.descripcion || '').toLowerCase()}">
                 <td>
-                    <strong>${product.nombre}</strong>
-                    ${product.descripcion ? `<br><small>${product.descripcion}</small>` : ''}
+                    <strong class="product-name">${product.nombre}</strong>
+                    ${product.descripcion ? `<br><small class="product-description">${product.descripcion}</small>` : ''}
                 </td>
-                <td><span class="badge">${product.categoria}</span></td>
-                <td>$${product.precio.toFixed(2)}</td>
+                <td><span class="badge category-badge">${product.categoria}</span></td>
+                <td>$${parseFloat(product.precio).toFixed(2)}</td>
                 <td>
                     <span class="badge ${stockStatus.class}">
                         ${product.cantidad} ${stockStatus.text}
                     </span>
                 </td>
                 <td>$${totalValue}</td>
-                <td>${product.proveedor || 'N/A'}</td>
+                <td class="supplier-info">${product.proveedor || 'N/A'}</td>
                 <td class="actions">
-                    <button class="action-btn view" onclick="viewProduct(${product.id})">
+                    <button class="action-btn view" onclick="viewProduct(${product.id})" title="Ver detalles">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="action-btn edit" onclick="editProduct(${product.id})">
+                    <button class="action-btn edit" onclick="editProduct(${product.id})" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn delete" onclick="deleteProduct(${product.id})">
+                    <button class="action-btn delete" onclick="deleteProduct(${product.id})" title="Eliminar">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -315,6 +333,7 @@ function displayInventory(products) {
     `;
     
     tableContainer.innerHTML = tableHTML;
+    console.log('✅ Tabla de inventario actualizada');
 }
 
 function getStockStatus(quantity) {
@@ -323,16 +342,91 @@ function getStockStatus(quantity) {
     return { class: 'success', text: 'Disponible' };
 }
 
+// FUNCIÓN DE BÚSQUEDA CORREGIDA
+function filterInventory(searchTerm) {
+    const searchValue = searchTerm.toLowerCase().trim();
+    const rows = document.querySelectorAll('#inventoryTable .product-row');
+    
+    console.log(`🔍 Buscando: "${searchValue}" en ${rows.length} productos`);
+    
+    if (searchValue === '') {
+        // Mostrar todos si no hay búsqueda
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+        console.log('✅ Mostrando todos los productos');
+        return;
+    }
+    
+    let foundCount = 0;
+    
+    rows.forEach(row => {
+        const productName = row.getAttribute('data-name');
+        const category = row.getAttribute('data-category');
+        const supplier = row.getAttribute('data-supplier');
+        const description = row.getAttribute('data-description');
+        
+        // Buscar en todos los campos
+        const match = productName.includes(searchValue) ||
+                     category.includes(searchValue) ||
+                     supplier.includes(searchValue) ||
+                     description.includes(searchValue);
+        
+        if (match) {
+            row.style.display = '';
+            foundCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    console.log(`✅ Encontrados ${foundCount} productos`);
+    
+    // Mostrar mensaje si no se encontraron resultados
+    const tableBody = document.querySelector('#inventoryTable tbody');
+    if (tableBody) {
+        const existingMessage = tableBody.querySelector('.no-results-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        if (foundCount === 0 && searchValue !== '') {
+            const noResultsRow = document.createElement('tr');
+            noResultsRow.className = 'no-results-message';
+            noResultsRow.innerHTML = `
+                <td colspan="7" style="text-align: center; padding: 40px; color: #6c757d;">
+                    <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                    <h3>No se encontraron productos</h3>
+                    <p>No hay resultados para "<strong>${searchTerm}</strong>"</p>
+                    <small>Intenta con otros términos de búsqueda</small>
+                </td>
+            `;
+            tableBody.appendChild(noResultsRow);
+        }
+    }
+}
+
 async function addProduct() {
     const form = document.getElementById('productForm');
     const formData = new FormData(form);
     
+    // Validar campos requeridos
+    const nombre = formData.get('nombre');
+    const categoria = formData.get('categoria');
+    const precio = formData.get('precio');
+    const cantidad = formData.get('cantidad');
+    
+    if (!nombre || !categoria || !precio || !cantidad) {
+        showNotification('Por favor completa todos los campos requeridos', 'error');
+        return;
+    }
+    
     const product = {
-        nombre: formData.get('nombre'),
+        nombre: nombre,
         descripcion: formData.get('descripcion'),
-        categoria: formData.get('categoria'),
-        precio: parseFloat(formData.get('precio')),
-        cantidad: parseInt(formData.get('cantidad')),
+        categoria: categoria,
+        precio: parseFloat(precio),
+        cantidad: parseInt(cantidad),
         proveedor: formData.get('proveedor')
     };
     
@@ -350,10 +444,21 @@ async function addProduct() {
             form.reset();
             loadInventory();
             loadDashboardData();
-            showNotification('Producto agregado exitosamente', 'success');
+            showNotification('✅ Producto agregado exitosamente', 'success');
+            
+            // Limpiar búsqueda si existe
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                filterInventory('');
+            }
+        } else {
+            const errorData = await response.json();
+            showNotification(errorData.error || 'Error al agregar producto', 'error');
         }
     } catch (error) {
-        showNotification('Error al agregar producto', 'error');
+        console.error('Error agregando producto:', error);
+        showNotification('Error de conexión al agregar producto', 'error');
     }
 }
 
@@ -370,40 +475,99 @@ async function deleteProduct(id) {
             if (response.ok) {
                 loadInventory();
                 loadDashboardData();
-                showNotification('Producto eliminado exitosamente', 'success');
+                showNotification('✅ Producto eliminado exitosamente', 'success');
+            } else {
+                const errorData = await response.json();
+                showNotification(errorData.error || 'Error al eliminar producto', 'error');
             }
         } catch (error) {
-            showNotification('Error al eliminar producto', 'error');
+            console.error('Error eliminando producto:', error);
+            showNotification('Error de conexión al eliminar producto', 'error');
         }
     }
 }
 
-function filterInventory(searchTerm) {
-    const rows = document.querySelectorAll('#inventoryTable tbody tr');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        if (text.includes(searchTerm.toLowerCase())) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-}
-
 function viewProduct(id) {
     // Implementar vista detallada del producto
-    alert(`Vista del producto ${id} - Por implementar`);
+    showNotification(`Vista del producto ${id} - Función en desarrollo`, 'info');
 }
 
 function editProduct(id) {
     // Implementar edición del producto
-    alert(`Editar producto ${id} - Por implementar`);
+    showNotification(`Editar producto ${id} - Función en desarrollo`, 'info');
 }
 
-function showNotification(message, type) {
-    // Implementar sistema de notificaciones toast
-    console.log(`${type.toUpperCase()}: ${message}`);
+// Sistema de notificaciones mejorado
+function showNotification(message, type = 'info') {
+    // Crear contenedor de notificaciones si no existe
+    let container = document.getElementById('notificationContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notificationContainer';
+        container.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 400px;
+        `;
+        document.body.appendChild(container);
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.style.cssText = `
+        background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#2196F3'};
+        color: white;
+        padding: 16px 20px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 
+                 type === 'error' ? 'fa-exclamation-circle' :
+                 type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+    
+    notification.innerHTML = `
+        <i class="fas ${icon}" style="font-size: 20px;"></i>
+        <span>${message}</span>
+    `;
+    
+    container.appendChild(notification);
+    
+    // Auto-eliminar después de 5 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 5000);
+    
+    // Agregar estilos de animación si no existen
+    if (!document.getElementById('notificationStyles')) {
+        const styles = document.createElement('style');
+        styles.id = 'notificationStyles';
+        styles.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styles);
+    }
 }
 
 // Funciones auxiliares para el servidor (simuladas)
@@ -412,3 +576,9 @@ function simulateServerResponse(data, delay = 1000) {
         setTimeout(() => resolve(data), delay);
     });
 }
+
+// Exportar funciones para uso global (necesario para los onclick en HTML)
+window.viewProduct = viewProduct;
+window.editProduct = editProduct;
+window.deleteProduct = deleteProduct;
+window.filterInventory = filterInventory;

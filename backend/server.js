@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3001;
 // Configuración de PostgreSQL - CORREGIDA
 const pool = new Pool({
     user: 'inventario_user',
-    host: 'localhost',
+    host: '40.79.240.198',
     database: 'inventario_db',
     password: 'Equipomena7',
     port: 5432,
